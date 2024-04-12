@@ -1,5 +1,7 @@
-import React, { useState, ChangeEvent, FormEvent } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import Modal from "./modals/FormModal";
+import DeleteConfirmationModal from "./modals/DeleteModal";
 import {
   FormWrapper,
   Form,
@@ -10,12 +12,119 @@ import {
   Label,
   ButtonContainer,
   Button,
-  ButtonCancel,
 } from "../styles/FormsStyles";
 
+interface DataItem {
+  id: number;
+  item: string;
+  description: string;
+  preguntas: number;
+  total: number;
+}
+
 function MainMenu() {
-  const handleButtonClick = () => {
-    window.location.href = "/";
+  const [data, setData] = useState<DataItem[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [formData, setFormData] = useState<DataItem>({
+    id: 0,
+    item: "",
+    description: "",
+    preguntas: 0,
+    total: 0,
+  });
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = () => {
+    fetch("http://localhost:3230/api/parametro")
+      .then((response) => response.json())
+      .then((data: DataItem[]) => {
+        console.log("Datos recibidos del servidor:", data);
+        setData(data);
+      })
+      .catch((error) => console.error("Error fetching data:", error));
+  };
+
+  const handleOpenModal = () => {
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setFormData({ id: 0, item: "", description: "", preguntas: 0, total: 0 });
+  };
+
+  const handleOpenDeleteModal = (id: number) => {
+    setSelectedItemId(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setSelectedItemId(null);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: name === "preguntas" || name === "total" ? parseInt(value) : value,
+    }));
+  };
+
+  const handleEditItem = (item: DataItem) => {
+    setFormData(item);
+    setShowModal(true);
+  };
+
+  const handleDeleteItem = () => {
+    if (selectedItemId) {
+      fetch(`http://localhost:3230/api/parametro/${selectedItemId}`, {
+        method: "DELETE",
+      })
+        .then(() => {
+          setData((prevData) => prevData.filter((item) => item.id !== selectedItemId));
+          handleCloseDeleteModal();
+        })
+        .catch((error) => {
+          console.error("Error deleting item:", error);
+        });
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const url = formData.id
+      ? `http://localhost:3230/api/parametro/${formData.id}`
+      : "http://localhost:3230/api/parametro";
+    const method = formData.id ? "PUT" : "POST";
+
+    fetch(url, {
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((newDataItem) => {
+        if (formData.id) {
+          setData((prevData) =>
+            prevData.map((item) => (item.id === formData.id ? newDataItem : item))
+          );
+        } else {
+          setData((prevData) => [...prevData, newDataItem]);
+        }
+        handleCloseModal();
+      })
+      .catch((error) => {
+        console.error("Error saving data:", error);
+      });
   };
 
   return (
@@ -30,195 +139,101 @@ function MainMenu() {
             Capacitación o académico en los indicadores siguientes USABILIDAD, CALIDA EN USO Y
             PORTABILIDAD Estos valores se pueden cambiar según el criterio de los evaluadores
           </FormHeader>
-          <Table>
-            <TableRow>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="codigo">Código</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="item">Item</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="descripción">Descripción</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="preguntas">Preguntas</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="total">% Total</Label>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <Label htmlFor="c1">1</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Link to="/funcionalidad">
-                  <Button type="button">FUNCIONALIDAD</Button>
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="d1">
-                  La capacidad del software para proveer las funciones que satisfacen las
-                  necesidades explícitas e implícitas cuando el software se utiliza bajo condiciones
-                  específicas.
-                </Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">5</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">14.00%</Label>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <Label htmlFor="c2">2</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Link to="/fiabilidad">
-                  <Button type="button">FIABILIDAD</Button>
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="d2">
-                  La capacidad del software para mantener un nivel específico de funcionamiento
-                  cuando se está utilizando bajo condiciones especificadas.
-                </Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">4</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">14.00%</Label>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <Label htmlFor="c3">3</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Link to="/usabilidad">
-                  <Button type="button">USABILIDAD</Button>
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="d3">
-                  La capacidad del software de ser entendido, aprendido, usado y atractivo al
-                  usuario, cuando es utilizado bajo las condiciones especificadas.
-                </Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">5</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">15.00%</Label>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <Label htmlFor="c4">4</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Link to="/eficiencia">
-                  <Button type="button">EFICIENCIA</Button>
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="d4">
-                  La capacidad del software de proveer un desempeño adecuado, de acuerdo a la
-                  cantidad de recursos utilizados y bajo las condiciones específicas.
-                </Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">3</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">15.00%</Label>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <Label htmlFor="c5">5</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Link to="/capacidad">
-                  <Button type="button">
-                    CAPACIDAD <br /> DE MANTENIMIENTO
-                  </Button>
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="d5">
-                  Capacidad del software para ser modificado. Las modificaciones pueden incluir
-                  correcciones, mejoras o adaptación del software a cambios en el entorno, y
-                  especificaciones de requerimientos funcionales.
-                </Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">5</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">14.00%</Label>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <Label htmlFor="c6">6</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Link to="/portabilidad">
-                  <Button type="button">PORTABILIDAD</Button>
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="d6">
-                  La capacidad del software para ser trasladado de un entorno a otro. El entorno
-                  puede incluir entornos organizaciones, de hardware o de software.
-                </Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">5</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">14.00%</Label>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>
-                <Label htmlFor="c7">7</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Link to="/calidad">
-                  <Button type="button">CALIDAD EN USO</Button>
-                </Link>
-              </TableCell>
-              <TableCell>
-                <Label htmlFor="d7">
-                  La capacidad del software para permitirles a usuarios específicos lograr las metas
-                  propuestas con eficacia, productividad, seguridad y satisfacción, en contextos
-                  especificados de uso.
-                </Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">6</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="i7">14.00%</Label>
-              </TableCell>
-            </TableRow>
-          </Table>
-          <FormHeader>
-            Total puntos: 33 <br />
-            Porcentaje Total: 100.00%
-          </FormHeader>
           <ButtonContainer>
-            <Link to="/total">
-              <Button type="button">RESULTADOS TOTALES</Button>
-            </Link>
+            <Button type="button" onClick={handleOpenModal}>
+              Añadir Elemento
+            </Button>
           </ButtonContainer>
         </Form>
       </FormWrapper>
+      <Modal show={showModal} handleClose={handleCloseModal}>
+        <Form onSubmit={handleSubmit}>
+          <FormHeader>{formData.id ? "Editar Elemento" : "Añadir Elemento"}</FormHeader>
+          <Label htmlFor="item">Item:</Label>
+          <input
+            type="text"
+            id="item"
+            name="item"
+            value={formData.item}
+            onChange={handleChange}
+            required
+          />
+          <Label htmlFor="description">Descripción:</Label>
+          <input
+            type="text"
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+          <ButtonContainer>
+            <Button type="submit">{formData.id ? "Guardar Cambios" : "Guardar"}</Button>
+            <Button type="button" onClick={handleCloseModal}>
+              Cancelar
+            </Button>
+          </ButtonContainer>
+        </Form>
+      </Modal>
+      <DeleteConfirmationModal
+        show={showDeleteModal}
+        handleClose={handleCloseDeleteModal}
+        handleDelete={handleDeleteItem}
+      />
+      <Table>
+        <TableRow>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="codigo">Código</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="item">Item</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="descripción">Descripción</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="preguntas">Preguntas</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="total">% Total</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="acciones">Acciones</Label>
+          </TableCell>
+        </TableRow>
+        {data.map((item, index) => (
+          <TableRow key={index}>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{index + 1}</Label>
+            </TableCell>
+            <TableCell>
+              <Label>{item.item}</Label>
+            </TableCell>
+            <TableCell>
+              <Label>{item.description}</Label>
+            </TableCell>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{item.preguntas !== undefined ? item.preguntas : 0}</Label>
+            </TableCell>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{item.total !== undefined ? item.total : 0}</Label>
+            </TableCell>
+            <TableCell style={{ textAlign: "center" }}>
+              <Button onClick={() => handleEditItem(item)}>Editar</Button>
+              <Button onClick={() => handleOpenDeleteModal(item.id)}>Eliminar</Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+      <FormHeader>
+        Total puntos: 33 <br />
+        Porcentaje Total: 100.00%
+      </FormHeader>
+      <ButtonContainer>
+        <Link to="/total">
+          <Button type="button">RESULTADOS TOTALES</Button>
+        </Link>
+      </ButtonContainer>
     </>
   );
 }
