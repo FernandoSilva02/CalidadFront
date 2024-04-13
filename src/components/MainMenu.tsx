@@ -15,7 +15,7 @@ import {
 } from "../styles/FormsStyles";
 
 interface DataItem {
-  id: number;
+  _id: string;
   item: string;
   description: string;
   preguntas: number;
@@ -27,13 +27,13 @@ function MainMenu() {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [formData, setFormData] = useState<DataItem>({
-    id: 0,
+    _id: "",
     item: "",
     description: "",
     preguntas: 0,
     total: 0,
   });
-  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -55,17 +55,7 @@ function MainMenu() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setFormData({ id: 0, item: "", description: "", preguntas: 0, total: 0 });
-  };
-
-  const handleOpenDeleteModal = (id: number) => {
-    setSelectedItemId(id);
-    setShowDeleteModal(true);
-  };
-
-  const handleCloseDeleteModal = () => {
-    setShowDeleteModal(false);
-    setSelectedItemId(null);
+    setFormData({ _id: "", item: "", description: "", preguntas: 0, total: 0 });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,28 +71,43 @@ function MainMenu() {
     setShowModal(true);
   };
 
-  const handleDeleteItem = () => {
-    if (selectedItemId) {
-      fetch(`http://localhost:3230/api/parametro/${selectedItemId}`, {
-        method: "DELETE",
-      })
-        .then(() => {
-          setData((prevData) => prevData.filter((item) => item.id !== selectedItemId));
+  const handleOpenDeleteModal = (id: string) => {
+    setSelectedItemId(id); // Asignar el id al estado selectedItemId
+    setShowDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setSelectedItemId(null); // Restablecer selectedItemId al cerrar el modal
+  };
+
+  const handleDeleteItem = (id: string) => {
+    fetch(`http://localhost:3230/api/parametro/${id}`, {
+      method: "DELETE",
+    })
+      .then((response) => {
+        if (response.ok) {
+          // Si la eliminación fue exitosa, actualizamos la lista de parámetros
+          setData((prevData) => prevData.filter((item) => item._id !== id));
+          // Cerrar el modal de confirmación de eliminación
           handleCloseDeleteModal();
-        })
-        .catch((error) => {
-          console.error("Error deleting item:", error);
-        });
-    }
+        } else {
+          // Si hubo un error en la eliminación, mostramos un mensaje de error
+          console.error("Error al eliminar el parámetro:", response.statusText);
+        }
+      })
+      .catch((error) => {
+        console.error("Error al eliminar el parámetro:", error);
+      });
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const url = formData.id
-      ? `http://localhost:3230/api/parametro/${formData.id}`
+    const url = formData._id
+      ? `http://localhost:3230/api/parametro/${formData._id}`
       : "http://localhost:3230/api/parametro";
-    const method = formData.id ? "PUT" : "POST";
+    const method = formData._id ? "PUT" : "POST";
 
     fetch(url, {
       method: method,
@@ -113,9 +118,9 @@ function MainMenu() {
     })
       .then((response) => response.json())
       .then((newDataItem) => {
-        if (formData.id) {
+        if (formData._id) {
           setData((prevData) =>
-            prevData.map((item) => (item.id === formData.id ? newDataItem : item))
+            prevData.map((item) => (item._id === formData._id ? newDataItem : item))
           );
         } else {
           setData((prevData) => [...prevData, newDataItem]);
@@ -148,7 +153,7 @@ function MainMenu() {
       </FormWrapper>
       <Modal show={showModal} handleClose={handleCloseModal}>
         <Form onSubmit={handleSubmit}>
-          <FormHeader>{formData.id ? "Editar Elemento" : "Añadir Elemento"}</FormHeader>
+          <FormHeader>{formData._id ? "Editar Elemento" : "Añadir Elemento"}</FormHeader>
           <Label htmlFor="item">Item:</Label>
           <input
             type="text"
@@ -168,7 +173,7 @@ function MainMenu() {
             required
           />
           <ButtonContainer>
-            <Button type="submit">{formData.id ? "Guardar Cambios" : "Guardar"}</Button>
+            <Button type="submit">{formData._id ? "Guardar Cambios" : "Guardar"}</Button>
             <Button type="button" onClick={handleCloseModal}>
               Cancelar
             </Button>
@@ -178,8 +183,9 @@ function MainMenu() {
       <DeleteConfirmationModal
         show={showDeleteModal}
         handleClose={handleCloseDeleteModal}
-        handleDelete={handleDeleteItem}
+        handleDelete={() => handleDeleteItem(selectedItemId || "")}
       />
+
       <Table>
         <TableRow>
           <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
@@ -220,7 +226,7 @@ function MainMenu() {
             </TableCell>
             <TableCell style={{ textAlign: "center" }}>
               <Button onClick={() => handleEditItem(item)}>Editar</Button>
-              <Button onClick={() => handleOpenDeleteModal(item.id)}>Eliminar</Button>
+              <Button onClick={() => handleOpenDeleteModal(item._id)}>Eliminar</Button>
             </TableCell>
           </TableRow>
         ))}
