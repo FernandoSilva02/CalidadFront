@@ -18,11 +18,11 @@ interface DataItem {
   _id: string;
   item: string;
   description: string;
-  preguntas: number;
-  total: number;
+  valor: number;
+  observation: string;
 }
 
-function MainMenu() {
+function Parametro() {
   const [data, setData] = useState<DataItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -30,8 +30,8 @@ function MainMenu() {
     _id: "",
     item: "",
     description: "",
-    preguntas: 0,
-    total: 0,
+    valor: 0,
+    observation: "",
   });
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
@@ -55,14 +55,14 @@ function MainMenu() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setFormData({ _id: "", item: "", description: "", preguntas: 0, total: 0 });
+    setFormData({ _id: "", item: "", description: "", valor: 0, observation: "" });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
-      [name]: name === "preguntas" || name === "total" ? parseInt(value) : value,
+      [name]: name === "valor" || name === "observation" ? parseInt(value) : value,
     }));
   };
 
@@ -194,12 +194,6 @@ function MainMenu() {
             <Label htmlFor="descripción">Descripción</Label>
           </TableCell>
           <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-            <Label htmlFor="preguntas">Preguntas</Label>
-          </TableCell>
-          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-            <Label htmlFor="total">% Total</Label>
-          </TableCell>
-          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
             <Label htmlFor="acciones">Acciones</Label>
           </TableCell>
         </TableRow>
@@ -208,19 +202,11 @@ function MainMenu() {
             <TableCell style={{ textAlign: "center" }}>
               <Label>{index + 1}</Label>
             </TableCell>
-            <TableCell>
-              <Link to={`/${item._id}`}>
-                <Button>{item.item}</Button>
-              </Link>
+            <TableCell>              
+                <Label>{item.item}</Label>
             </TableCell>
             <TableCell>
               <Label>{item.description}</Label>
-            </TableCell>
-            <TableCell style={{ textAlign: "center" }}>
-              <Label>{item.preguntas !== undefined ? item.preguntas : 0}</Label>
-            </TableCell>
-            <TableCell style={{ textAlign: "center" }}>
-              <Label>{item.total !== undefined ? item.total : 0}</Label>
             </TableCell>
             <TableCell style={{ textAlign: "center" }}>
               <Button onClick={() => handleEditItem(item)}>Editar</Button>
@@ -242,4 +228,4 @@ function MainMenu() {
   );
 }
 
-export default MainMenu;
+export default Parametro;

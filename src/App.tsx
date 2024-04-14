@@ -2,6 +2,7 @@ import React from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import MainMenu from "./components/MainMenu";
+import Parametro from "./components/Parametro";
 import FuncionalidadForm from "./components/FuncionalidadForm";
 import FiablidadForm from "./components/FiabilidadForm";
 import UsabilidadForm from "./components/UsabilidadForm";
@@ -32,6 +33,7 @@ function App() {
             <Route path="/calidad" element={<CalidadForm />} />
             <Route path="/total" element={<Total />} />
             <Route path="/" element={<MainMenu />} />
+            <Route path="/:id" element={<Parametro />} />
           </>
         ) : (
           <></>
