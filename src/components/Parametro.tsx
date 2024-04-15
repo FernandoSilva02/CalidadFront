@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import Modal from "./modals/FormModal";
 import DeleteConfirmationModal from "./modals/DeleteModal";
 import {
@@ -23,6 +23,7 @@ interface DataItem {
 }
 
 function Parametro() {
+  const { id } = useParams<{ id: string }>(); // Obtener el ID de la URL
   const [data, setData] = useState<DataItem[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -37,10 +38,10 @@ function Parametro() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [id]);
 
   const fetchData = () => {
-    fetch("http://localhost:3230/api/parametro")
+    fetch(`http://localhost:3230/api/atributos/?parametro=${id}`) // Obtener datos solo para el ID de parámetro especificado
       .then((response) => response.json())
       .then((data: DataItem[]) => {
         console.log("Datos recibidos del servidor:", data);
@@ -80,37 +81,43 @@ function Parametro() {
     setShowDeleteModal(false);
     setSelectedItemId(null);
   };
-  
+
   const handleDeleteItem = (id: string) => {
-    fetch(`http://localhost:3230/api/parametro/${id}`, {
+    fetch(`http://localhost:3230/api/atributos/${id}`, {
       method: "DELETE",
     })
-    .then((response) => {
-      if (response.ok) {
-        setData((prevData) => prevData.filter((item) => item._id !== id));
-      } else {
-        console.error("Error al eliminar el parámetro:", response.statusText);
-      }
-    })
-    .catch((error) => {
-      console.error("Error al eliminar el parámetro:", error);
-    });
+      .then((response) => {
+        if (response.ok) {
+          setData((prevData) => prevData.filter((item) => item._id !== id));
+        } else {
+          console.error("Error al eliminar el parámetro:", response.statusText);
+        }
+      })
+      .catch((error) => {
+        console.error("Error al eliminar el parámetro:", error);
+      });
   };
-  
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const url = formData._id
-      ? `http://localhost:3230/api/parametro/${formData._id}`
-      : "http://localhost:3230/api/parametro";
+      ? `http://localhost:3230/api/atributos/${formData._id}`
+      : "http://localhost:3230/api/atributos";
     const method = formData._id ? "PUT" : "POST";
+
+    // Incluir el ID del parámetro en el cuerpo de la solicitud
+    const requestBody = {
+      ...formData,
+      parametro: id, // Aquí asignamos el ID del parámetro
+    };
 
     fetch(url, {
       method: method,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(formData),
+      body: JSON.stringify(requestBody), // Enviar el cuerpo de la solicitud con el ID del parámetro
     })
       .then((response) => response.json())
       .then((newDataItem) => {
@@ -119,7 +126,13 @@ function Parametro() {
             prevData.map((item) => (item._id === formData._id ? newDataItem : item))
           );
         } else {
-          setData((prevData) => [...prevData, newDataItem]);
+          // Verificar si newDataItem es un array antes de actualizar el estado
+          if (Array.isArray(newDataItem)) {
+            setData(newDataItem);
+          } else {
+            // Si no es un array, lo agregamos al estado de data
+            setData((prevData) => [...prevData, newDataItem]);
+          }
         }
         handleCloseModal();
       })
@@ -197,23 +210,31 @@ function Parametro() {
             <Label htmlFor="acciones">Acciones</Label>
           </TableCell>
         </TableRow>
-        {data.map((item, index) => (
-          <TableRow key={index}>
-            <TableCell style={{ textAlign: "center" }}>
-              <Label>{index + 1}</Label>
-            </TableCell>
-            <TableCell>              
+        {data.length > 0 ? (
+          data.map((item, index) => (
+            <TableRow key={index}>
+              <TableCell style={{ textAlign: "center" }}>
+                <Label>{index + 1}</Label>
+              </TableCell>
+              <TableCell>
                 <Label>{item.item}</Label>
-            </TableCell>
-            <TableCell>
-              <Label>{item.description}</Label>
-            </TableCell>
-            <TableCell style={{ textAlign: "center" }}>
-              <Button onClick={() => handleEditItem(item)}>Editar</Button>
-              <Button onClick={() => handleOpenDeleteModal(item._id)}>Eliminar</Button>
+              </TableCell>
+              <TableCell>
+                <Label>{item.description}</Label>
+              </TableCell>
+              <TableCell style={{ textAlign: "center" }}>
+                <Button onClick={() => handleEditItem(item)}>Editar</Button>
+                <Button onClick={() => handleOpenDeleteModal(item._id)}>Eliminar</Button>
+              </TableCell>
+            </TableRow>
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={4} style={{ textAlign: "center" }}>
+              No se encontraron atributos.
             </TableCell>
           </TableRow>
-        ))}
+        )}
       </Table>
       <FormHeader>
         Total puntos: 33 <br />
