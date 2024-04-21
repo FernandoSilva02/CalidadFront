@@ -22,9 +22,15 @@ interface DataItem {
   observation: string;
 }
 
+interface ParametroData {
+  item: string;
+  description: string;
+}
+
 function Parametro() {
-  const { id } = useParams<{ id: string }>(); // Obtener el ID de la URL
+  const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<DataItem[]>([]);
+  const [parametroData, setParametroData] = useState<ParametroData | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [formData, setFormData] = useState<DataItem>({
@@ -38,10 +44,28 @@ function Parametro() {
 
   useEffect(() => {
     fetchData();
+
+    fetch(`http://localhost:3230/api/parametro/${id}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setParametroData(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching parametro data:", error);
+        setParametroData({
+          item: "Error",
+          description: "No se pudo cargar los datos del parámetro.",
+        });
+      });
   }, [id]);
 
   const fetchData = () => {
-    fetch(`http://localhost:3230/api/atributos/?parametro=${id}`) // Obtener datos solo para el ID de parámetro especificado
+    fetch(`http://localhost:3230/api/atributos/?parametro=${id}`)
       .then((response) => response.json())
       .then((data: DataItem[]) => {
         console.log("Datos recibidos del servidor:", data);
@@ -145,13 +169,15 @@ function Parametro() {
     <>
       <FormWrapper>
         <Form>
-          <FormHeader>PARÁMETROS</FormHeader>
           <FormHeader>
-            Seleccione los porcentajes según el criterio de evaluación que desea aplicar
-            correspondiente a el software a evaluar Ejemplo Para Software Bancario tendría mayor
-            peso en los indicadores siguientes FUNCIONALIDAD Y EFICIENCIA Para un Software de
-            Capacitación o académico en los indicadores siguientes USABILIDAD, CALIDA EN USO Y
-            PORTABILIDAD Estos valores se pueden cambiar según el criterio de los evaluadores
+            {parametroData ? (
+              <>
+                <p>{parametroData.item}</p>
+                <p>{parametroData.description}</p>
+              </>
+            ) : (
+              "Cargando datos del parámetro..."
+            )}
           </FormHeader>
           <ButtonContainer>
             <Button type="button" onClick={handleOpenModal}>
