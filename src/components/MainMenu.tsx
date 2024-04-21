@@ -20,6 +20,7 @@ interface DataItem {
   description: string;
   preguntas: number;
   total: number;
+  atributosCount?: number; // Add this line
 }
 
 function MainMenu() {
@@ -43,8 +44,16 @@ function MainMenu() {
     fetch("http://localhost:3230/api/parametro")
       .then((response) => response.json())
       .then((data: DataItem[]) => {
-        console.log("Datos recibidos del servidor:", data);
-        setData(data);
+        Promise.all(data.map((item) =>
+          fetch(`http://localhost:3230/api/atributos?parametro=${item._id}`)
+            .then((response) => response.json())
+            .then((atributos) => {
+              item.atributosCount = atributos.length;
+              return item;
+            })
+        )).then((dataWithAtributosCount) => {
+          setData(dataWithAtributosCount);
+        });
       })
       .catch((error) => console.error("Error fetching data:", error));
   };
@@ -217,8 +226,8 @@ function MainMenu() {
               <Label>{item.description}</Label>
             </TableCell>
             <TableCell style={{ textAlign: "center" }}>
-              <Label>{item.preguntas !== undefined ? item.preguntas : 0}</Label>
-            </TableCell>
+  <Label>{item.atributosCount !== undefined ? item.atributosCount : 0}</Label>
+</TableCell>
             <TableCell style={{ textAlign: "center" }}>
               <Label>{item.total !== undefined ? item.total : 0}</Label>
             </TableCell>

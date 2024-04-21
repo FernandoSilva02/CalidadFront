@@ -67,12 +67,16 @@ function Parametro() {
   const fetchData = () => {
     fetch(`http://localhost:3230/api/atributos/?parametro=${id}`)
       .then((response) => response.json())
-      .then((data: DataItem[]) => {
+      .then((data) => {
         console.log("Datos recibidos del servidor:", data);
-        setData(data);
+        setData(Array.isArray(data) ? data : []); // Ensure data is always an array
       })
-      .catch((error) => console.error("Error fetching data:", error));
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setData([]); // Set to empty array on error
+      });
   };
+  
 
   const handleOpenModal = () => {
     setShowModal(true);
@@ -124,39 +128,33 @@ function Parametro() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
+  
     const url = formData._id
       ? `http://localhost:3230/api/atributos/${formData._id}`
       : "http://localhost:3230/api/atributos";
     const method = formData._id ? "PUT" : "POST";
-
-    // Incluir el ID del parámetro en el cuerpo de la solicitud
+  
     const requestBody = {
       ...formData,
-      parametro: id, // Aquí asignamos el ID del parámetro
+      parametro: id,
     };
-
+  
     fetch(url, {
       method: method,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody), // Enviar el cuerpo de la solicitud con el ID del parámetro
+      body: JSON.stringify(requestBody),
     })
       .then((response) => response.json())
       .then((newDataItem) => {
+        // Correctly handle both PUT and POST responses
         if (formData._id) {
-          setData((prevData) =>
-            prevData.map((item) => (item._id === formData._id ? newDataItem : item))
-          );
+          // We're updating an item
+          setData(prevData => prevData.map(item => item._id === formData._id ? newDataItem : item));
         } else {
-          // Verificar si newDataItem es un array antes de actualizar el estado
-          if (Array.isArray(newDataItem)) {
-            setData(newDataItem);
-          } else {
-            // Si no es un array, lo agregamos al estado de data
-            setData((prevData) => [...prevData, newDataItem]);
-          }
+          // We're adding a new item
+          setData(prevData => Array.isArray(prevData) ? [...prevData, newDataItem] : [newDataItem]);
         }
         handleCloseModal();
       })
@@ -164,6 +162,8 @@ function Parametro() {
         console.error("Error saving data:", error);
       });
   };
+  
+  
 
   return (
     <>
