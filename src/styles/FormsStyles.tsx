@@ -46,14 +46,25 @@ export const FormHeader = styled.p`
 `;
 
 export const Table = styled.table`
-  width: 100%;
+  width: 100%;                // Mantiene la tabla responsive dentro de su contenedor
+  max-width: 1200px;           // Establece un ancho máximo para la tabla
+  margin: ${spacing.medium} auto;  // Añade un margen automático horizontal para centrar y un margen vertical
+  box-shadow: 0px 0px 10px rgba(0,0,0,0.1); // Opcional: añade sombra para elevar la tabla visualmente
+  border-collapse: collapse; // Colapsa los bordes de la tabla para un diseño más limpio
 `;
 
-export const TableRow = styled.tr``;
+export const TableRow = styled.tr`
+  &:nth-child(odd) {
+    background-color: #f9f9f9; // Opcional: colores alternos para las filas
+  }
+`;
 
 export const TableCell = styled.td`
   padding: ${spacing.medium};
+  border-bottom: 1px solid #ddd; // Añade una línea de separación entre filas
+  text-align: left; // Alinea el texto a la izquierda
 `;
+
 
 export const Label = styled.label`
   font-weight: normal;

@@ -76,7 +76,6 @@ function Parametro() {
         setData([]); // Set to empty array on error
       });
   };
-  
 
   const handleOpenModal = () => {
     setShowModal(true);
@@ -128,17 +127,17 @@ function Parametro() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-  
+
     const url = formData._id
       ? `http://localhost:3230/api/atributos/${formData._id}`
       : "http://localhost:3230/api/atributos";
     const method = formData._id ? "PUT" : "POST";
-  
+
     const requestBody = {
       ...formData,
       parametro: id,
     };
-  
+
     fetch(url, {
       method: method,
       headers: {
@@ -151,10 +150,14 @@ function Parametro() {
         // Correctly handle both PUT and POST responses
         if (formData._id) {
           // We're updating an item
-          setData(prevData => prevData.map(item => item._id === formData._id ? newDataItem : item));
+          setData((prevData) =>
+            prevData.map((item) => (item._id === formData._id ? newDataItem : item))
+          );
         } else {
           // We're adding a new item
-          setData(prevData => Array.isArray(prevData) ? [...prevData, newDataItem] : [newDataItem]);
+          setData((prevData) =>
+            Array.isArray(prevData) ? [...prevData, newDataItem] : [newDataItem]
+          );
         }
         handleCloseModal();
       })
@@ -162,8 +165,6 @@ function Parametro() {
         console.error("Error saving data:", error);
       });
   };
-  
-  
 
   return (
     <>
@@ -218,7 +219,10 @@ function Parametro() {
       <DeleteConfirmationModal
         show={showDeleteModal}
         handleClose={handleCloseDeleteModal}
-        handleDelete={() => handleDeleteItem(selectedItemId!)}
+        handleDelete={() => {
+          handleDeleteItem(selectedItemId!);
+          handleCloseDeleteModal(); // Close the modal after deleting the item
+        }}
       />
 
       <Table>
@@ -242,7 +246,7 @@ function Parametro() {
               <TableCell style={{ textAlign: "center" }}>
                 <Label>{index + 1}</Label>
               </TableCell>
-              <TableCell>
+              <TableCell style={{ textAlign: "center" }}>
                 <Label>{item.item}</Label>
               </TableCell>
               <TableCell>
@@ -262,15 +266,6 @@ function Parametro() {
           </TableRow>
         )}
       </Table>
-      <FormHeader>
-        Total puntos: 33 <br />
-        Porcentaje Total: 100.00%
-      </FormHeader>
-      <ButtonContainer>
-        <Link to="/total">
-          <Button type="button">RESULTADOS TOTALES</Button>
-        </Link>
-      </ButtonContainer>
     </>
   );
 }

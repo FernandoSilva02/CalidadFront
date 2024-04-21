@@ -57,7 +57,7 @@ function MainMenu() {
         ).then((dataWithAtributosCount) => {
           const totalItems = dataWithAtributosCount.length;
           const equalPercentage = totalItems > 0 ? 100 / totalItems : 0;
-          dataWithAtributosCount.forEach(item => item.porcentaje = equalPercentage);
+          dataWithAtributosCount.forEach((item) => (item.porcentaje = equalPercentage));
           setData(dataWithAtributosCount);
         });
       })
@@ -102,7 +102,7 @@ function MainMenu() {
     })
       .then((response) => {
         if (response.ok) {
-          setData((prevData) => prevData.filter((item) => item._id !== id));
+          fetchData(); // Fetch data again after deletion
         } else {
           console.error("Error al eliminar el parámetro:", response.statusText);
         }
@@ -129,13 +129,7 @@ function MainMenu() {
     })
       .then((response) => response.json())
       .then((newDataItem) => {
-        if (formData._id) {
-          setData((prevData) =>
-            prevData.map((item) => (item._id === formData._id ? newDataItem : item))
-          );
-        } else {
-          setData((prevData) => [...prevData, newDataItem]);
-        }
+        fetchData(); // Fetch data again after editing
         handleCloseModal();
       })
       .catch((error) => {
@@ -194,7 +188,10 @@ function MainMenu() {
       <DeleteConfirmationModal
         show={showDeleteModal}
         handleClose={handleCloseDeleteModal}
-        handleDelete={() => handleDeleteItem(selectedItemId!)}
+        handleDelete={() => {
+          handleDeleteItem(selectedItemId!);
+          handleCloseDeleteModal(); // Close the modal after deleting the item
+        }}
       />
 
       <Table>
@@ -224,7 +221,7 @@ function MainMenu() {
               <Label>{index + 1}</Label>
             </TableCell>
             <TableCell>
-              <Link to={`/${item._id}`}>
+              <Link to={`/${item._id}`} style={{ display: "flex", justifyContent: "center" }}>
                 <Button>{item.item}</Button>
               </Link>
             </TableCell>
