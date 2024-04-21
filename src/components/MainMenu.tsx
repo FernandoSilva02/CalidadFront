@@ -20,7 +20,8 @@ interface DataItem {
   description: string;
   preguntas: number;
   total: number;
-  atributosCount?: number; // Add this line
+  atributosCount?: number;
+  porcentaje?: number; // Ensure this is always set in fetchData()
 }
 
 function MainMenu() {
@@ -44,14 +45,19 @@ function MainMenu() {
     fetch("http://localhost:3230/api/parametro")
       .then((response) => response.json())
       .then((data: DataItem[]) => {
-        Promise.all(data.map((item) =>
-          fetch(`http://localhost:3230/api/atributos?parametro=${item._id}`)
-            .then((response) => response.json())
-            .then((atributos) => {
-              item.atributosCount = atributos.length;
-              return item;
-            })
-        )).then((dataWithAtributosCount) => {
+        Promise.all(
+          data.map((item) =>
+            fetch(`http://localhost:3230/api/atributos?parametro=${item._id}`)
+              .then((response) => response.json())
+              .then((atributos) => {
+                item.atributosCount = atributos.length;
+                return item;
+              })
+          )
+        ).then((dataWithAtributosCount) => {
+          const totalItems = dataWithAtributosCount.length;
+          const equalPercentage = totalItems > 0 ? 100 / totalItems : 0;
+          dataWithAtributosCount.forEach(item => item.porcentaje = equalPercentage);
           setData(dataWithAtributosCount);
         });
       })
@@ -89,23 +95,23 @@ function MainMenu() {
     setShowDeleteModal(false);
     setSelectedItemId(null);
   };
-  
+
   const handleDeleteItem = (id: string) => {
     fetch(`http://localhost:3230/api/parametro/${id}`, {
       method: "DELETE",
     })
-    .then((response) => {
-      if (response.ok) {
-        setData((prevData) => prevData.filter((item) => item._id !== id));
-      } else {
-        console.error("Error al eliminar el parámetro:", response.statusText);
-      }
-    })
-    .catch((error) => {
-      console.error("Error al eliminar el parámetro:", error);
-    });
+      .then((response) => {
+        if (response.ok) {
+          setData((prevData) => prevData.filter((item) => item._id !== id));
+        } else {
+          console.error("Error al eliminar el parámetro:", response.statusText);
+        }
+      })
+      .catch((error) => {
+        console.error("Error al eliminar el parámetro:", error);
+      });
   };
-  
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
@@ -144,10 +150,10 @@ function MainMenu() {
           <FormHeader>PARÁMETROS</FormHeader>
           <FormHeader>
             Seleccione los porcentajes según el criterio de evaluación que desea aplicar
-            correspondiente a el software a evaluar Ejemplo Para Software Bancario tendría mayor
-            peso en los indicadores siguientes FUNCIONALIDAD Y EFICIENCIA Para un Software de
-            Capacitación o académico en los indicadores siguientes USABILIDAD, CALIDA EN USO Y
-            PORTABILIDAD Estos valores se pueden cambiar según el criterio de los evaluadores
+            correspondiente al software a evaluar. Ejemplo: Para Software Bancario tendría mayor
+            peso en los indicadores siguientes: FUNCIONALIDAD Y EFICIENCIA. Para un Software de
+            Capacitación o académico en los indicadores siguientes: USABILIDAD, CALIDAD EN USO Y
+            PORTABILIDAD. Estos valores se pueden cambiar según el criterio de los evaluadores.
           </FormHeader>
           <ButtonContainer>
             <Button type="button" onClick={handleOpenModal}>
@@ -226,10 +232,10 @@ function MainMenu() {
               <Label>{item.description}</Label>
             </TableCell>
             <TableCell style={{ textAlign: "center" }}>
-  <Label>{item.atributosCount !== undefined ? item.atributosCount : 0}</Label>
-</TableCell>
+              <Label>{item.atributosCount !== undefined ? item.atributosCount : 0}</Label>
+            </TableCell>
             <TableCell style={{ textAlign: "center" }}>
-              <Label>{item.total !== undefined ? item.total : 0}</Label>
+              <Label>{item.porcentaje !== undefined ? item.porcentaje.toFixed(2) : "0.00"}%</Label>
             </TableCell>
             <TableCell style={{ textAlign: "center" }}>
               <Button onClick={() => handleEditItem(item)}>Editar</Button>
