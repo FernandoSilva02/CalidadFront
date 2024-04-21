@@ -244,7 +244,7 @@ function MainMenu() {
         ))}
       </Table>
       <FormHeader>
-      Total puntos: {totalAtributosCount} <br />
+      Total de preguntas: {totalAtributosCount} <br />
         Porcentaje Total: 100.00%
       </FormHeader>
       <ButtonContainer>
