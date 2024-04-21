@@ -137,6 +137,8 @@ function MainMenu() {
       });
   };
 
+  const totalAtributosCount = data.reduce((acc, item) => acc + (item.atributosCount || 0), 0);
+
   return (
     <>
       <FormWrapper>
@@ -242,7 +244,7 @@ function MainMenu() {
         ))}
       </Table>
       <FormHeader>
-        Total puntos: 33 <br />
+      Total puntos: {totalAtributosCount} <br />
         Porcentaje Total: 100.00%
       </FormHeader>
       <ButtonContainer>
