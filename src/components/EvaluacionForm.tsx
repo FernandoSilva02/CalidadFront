@@ -15,9 +15,13 @@ import {
 } from "../styles/FormsStyles";
 
 interface DataItem {
+  percentage: number;
+  totalPoints: number;
   _id: string;
   item: string;
   description: string;
+  valor: number;
+  observation: string;
 }
 
 interface ParametroData {
@@ -25,7 +29,7 @@ interface ParametroData {
   description: string;
 }
 
-function Parametro() {
+function EvaluacionForm() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<DataItem[]>([]);
   const [parametroData, setParametroData] = useState<ParametroData | null>(null);
@@ -35,30 +39,30 @@ function Parametro() {
     _id: "",
     item: "",
     description: "",
+    valor: 0,
+    observation: "",
+    percentage: 0,
+    totalPoints: 0,
   });
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [totalValor, setTotalValor] = useState<number>(0); // Nuevo estado para almacenar la suma de los valores
+  const [totalPercentage, setTotalPercentage] = useState<number>(0); // Nuevo estado para almacenar el porcentaje total
+  const preguntasPorItem = 3; // Cantidad de preguntas por item
 
   useEffect(() => {
     fetchData();
-
-    fetch(`http://localhost:3230/api/parametro/${id}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setParametroData(data);
-      })
-      .catch((error) => {
-        console.error("Error fetching parametro data:", error);
-        setParametroData({
-          item: "Error",
-          description: "No se pudo cargar los datos del parámetro.",
-        });
-      });
   }, [id]);
+
+  useEffect(() => {
+    // Calcula la suma total de los valores cada vez que data cambia
+    const sum = data.reduce((total, item) => total + item.valor, 0);
+    setTotalValor(sum);
+    // Calcula el total de puntos basado en la cantidad de preguntas por item
+    const totalPoints = sum / preguntasPorItem;
+    // Calcula el porcentaje total
+    const percentage = ((sum / (data.length * preguntasPorItem)) * 100).toFixed(2);
+    setTotalPercentage(parseFloat(percentage)); // Convert percentage to a number
+  }, [data, preguntasPorItem]);
 
   const fetchData = () => {
     fetch(`http://localhost:3230/api/atributos/?parametro=${id}`)
@@ -79,14 +83,22 @@ function Parametro() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setFormData({ _id: "", item: "", description: ""});
+    setFormData({ 
+      _id: "", 
+      item: "", 
+      description: "", 
+      valor: 0, 
+      observation: "",
+      percentage: 0,
+      totalPoints: 0,
+    });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
-      [name]: name === "valor" || name === "observation" ? parseInt(value) : value,
+      [name]: name === "valor" ? parseInt(value) : value,
     }));
   };
 
@@ -176,33 +188,30 @@ function Parametro() {
               "Cargando datos del parámetro..."
             )}
           </FormHeader>
-          <ButtonContainer>
-            <Button type="button" onClick={handleOpenModal}>
-              Añadir Elemento
-            </Button>
-          </ButtonContainer>
         </Form>
       </FormWrapper>
       <Modal show={showModal} handleClose={handleCloseModal}>
         <Form onSubmit={handleSubmit}>
           <FormHeader>{formData._id ? "Editar Elemento" : "Añadir Elemento"}</FormHeader>
-          <Label htmlFor="item">Item:</Label>
+          <Label htmlFor="valor">Valor:</Label>
           <input
-            type="text"
-            id="item"
-            name="item"
-            value={formData.item}
+            type="number"
+            id="valor"
+            name="valor"
+            value={formData.valor}
             onChange={handleChange}
+            min="0"
+            max="3"
             required
           />
-          <Label htmlFor="description">Descripción:</Label>
+          <br />
+          <Label htmlFor="observation">Observación:</Label>
           <input
             type="text"
-            id="description"
-            name="description"
-            value={formData.description}
+            id="observation"
+            name="observation"
+            value={formData.observation}
             onChange={handleChange}
-            required
           />
           <ButtonContainer>
             <Button type="submit">{formData._id ? "Guardar Cambios" : "Guardar"}</Button>
@@ -233,6 +242,12 @@ function Parametro() {
             <Label htmlFor="descripción">Descripción</Label>
           </TableCell>
           <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="Valor">Valor</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="Descripcion">Descripción</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
             <Label htmlFor="acciones">Acciones</Label>
           </TableCell>
         </TableRow>
@@ -249,8 +264,13 @@ function Parametro() {
                 <Label>{item.description}</Label>
               </TableCell>
               <TableCell style={{ textAlign: "center" }}>
+                <Label>{item.valor}</Label>
+              </TableCell>
+              <TableCell>
+                <Label>{item.observation}</Label>
+              </TableCell>
+              <TableCell style={{ textAlign: "center" }}>
                 <Button onClick={() => handleEditItem(item)}>Editar</Button>
-                <Button onClick={() => handleOpenDeleteModal(item._id)}>Eliminar</Button>
               </TableCell>
             </TableRow>
           ))
@@ -262,8 +282,19 @@ function Parametro() {
           </TableRow>
         )}
       </Table>
+      <FormHeader>
+        Total puntos: {totalValor} de {data.length * preguntasPorItem} <br />
+        Porcentaje total resultado de calidad en uso: {totalPercentage}%
+      </FormHeader>
+      <FormHeader>
+        Criterios de evaluación: <br /> <br />
+        0 No cumple de 0% a un 30% <br />
+        1 Cumple de 31% a 50% <br />
+        2 Cumple de 51% a 89% <br />
+        3 Cumple con o más de 90%
+      </FormHeader>
     </>
   );
 }
 
-export default Parametro;
+export default EvaluacionForm;

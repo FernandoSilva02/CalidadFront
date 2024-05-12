@@ -10,6 +10,8 @@ import EficienciaForm from "./components/EficienciaForm";
 import CapacidadForm from "./components/CapacidadForm";
 import PortabilidadForm from "./components/PortabilidadForm";
 import CalidadForm from "./components/CalidadForm";
+import Evaluacion from "./components/Evaluacion";
+import EvaluacionForm from "./components/EvaluacionForm";
 import Total from "./components/Total";
 import "./App.css";
 
@@ -30,6 +32,8 @@ function App() {
         <Route path="/capacidad" element={<CapacidadForm />} />
         <Route path="/portabilidad" element={<PortabilidadForm />} />
         <Route path="/calidad" element={<CalidadForm />} />
+        <Route path="/evaluacion" element={<Evaluacion/>} />
+        <Route path="/evaluacion/:id" element={<EvaluacionForm/>} />
         <Route path="/total" element={<Total />} />
         <Route path="/:id" element={<Parametro />} />
         {isAuthenticated ? <></> : <></>}

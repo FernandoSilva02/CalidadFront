@@ -497,7 +497,7 @@ function Total() {
           </FormHeader>
           <ButtonContainer>
             <Link to="/">
-              <Button type="button">RETROCEDER</Button>
+              <Button type="button">VOLVER AL MENÚ DE INICIO</Button>
             </Link>
           </ButtonContainer>
         </Form>

@@ -248,8 +248,8 @@ function MainMenu() {
         Porcentaje Total: 100.00%
       </FormHeader>
       <ButtonContainer>
-        <Link to="/total">
-          <Button type="button">RESULTADOS TOTALES</Button>
+        <Link to="/evaluacion">
+          <Button type="button">REALIZAR EVALUACIÓN</Button>
         </Link>
       </ButtonContainer>
     </>
