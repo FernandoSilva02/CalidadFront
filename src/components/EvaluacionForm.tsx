@@ -45,23 +45,38 @@ function EvaluacionForm() {
     totalPoints: 0,
   });
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [totalValor, setTotalValor] = useState<number>(0); // Nuevo estado para almacenar la suma de los valores
-  const [totalPercentage, setTotalPercentage] = useState<number>(0); // Nuevo estado para almacenar el porcentaje total
-  const preguntasPorItem = 3; // Cantidad de preguntas por item
+  const [totalValor, setTotalValor] = useState<number>(0);
+  const [totalPercentage, setTotalPercentage] = useState<number>(0);
+  const preguntasPorItem = 3;
 
   useEffect(() => {
     fetchData();
+
+    fetch(`http://localhost:3230/api/parametro/${id}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setParametroData(data);
+      })
+      .catch((error) => {
+        console.error("Error fetching parametro data:", error);
+        setParametroData({
+          item: "Error",
+          description: "No se pudo cargar los datos del parámetro.",
+        });
+      });
   }, [id]);
 
   useEffect(() => {
-    // Calcula la suma total de los valores cada vez que data cambia
     const sum = data.reduce((total, item) => total + item.valor, 0);
     setTotalValor(sum);
-    // Calcula el total de puntos basado en la cantidad de preguntas por item
     const totalPoints = sum / preguntasPorItem;
-    // Calcula el porcentaje total
     const percentage = ((sum / (data.length * preguntasPorItem)) * 100).toFixed(2);
-    setTotalPercentage(parseFloat(percentage)); // Convert percentage to a number
+    setTotalPercentage(parseFloat(percentage));
   }, [data, preguntasPorItem]);
 
   const fetchData = () => {
@@ -69,11 +84,11 @@ function EvaluacionForm() {
       .then((response) => response.json())
       .then((data) => {
         console.log("Datos recibidos del servidor:", data);
-        setData(Array.isArray(data) ? data : []); // Ensure data is always an array
+        setData(Array.isArray(data) ? data : []);
       })
       .catch((error) => {
         console.error("Error fetching data:", error);
-        setData([]); // Set to empty array on error
+        setData([]);
       });
   };
 
@@ -83,11 +98,11 @@ function EvaluacionForm() {
 
   const handleCloseModal = () => {
     setShowModal(false);
-    setFormData({ 
-      _id: "", 
-      item: "", 
-      description: "", 
-      valor: 0, 
+    setFormData({
+      _id: "",
+      item: "",
+      description: "",
+      valor: 0,
       observation: "",
       percentage: 0,
       totalPoints: 0,
@@ -155,14 +170,11 @@ function EvaluacionForm() {
     })
       .then((response) => response.json())
       .then((newDataItem) => {
-        // Correctly handle both PUT and POST responses
         if (formData._id) {
-          // We're updating an item
           setData((prevData) =>
             prevData.map((item) => (item._id === formData._id ? newDataItem : item))
           );
         } else {
-          // We're adding a new item
           setData((prevData) =>
             Array.isArray(prevData) ? [...prevData, newDataItem] : [newDataItem]
           );
@@ -171,6 +183,29 @@ function EvaluacionForm() {
       })
       .catch((error) => {
         console.error("Error saving data:", error);
+      });
+  };
+
+  const handleSaveChanges = () => {
+    fetch(`http://localhost:3230/api/parametro/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        valor: totalValor,
+        percentage: totalPercentage,
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          console.log("Cambios guardados exitosamente.");
+        } else {
+          console.error("Error al guardar los cambios:", response.statusText);
+        }
+      })
+      .catch((error) => {
+        console.error("Error al guardar los cambios:", error);
       });
   };
 
@@ -190,6 +225,11 @@ function EvaluacionForm() {
           </FormHeader>
         </Form>
       </FormWrapper>
+      <ButtonContainer>
+        <Link to="/evaluacion">
+          <Button onClick={handleSaveChanges}>Guardar Cambios</Button>
+        </Link>
+      </ButtonContainer>
       <Modal show={showModal} handleClose={handleCloseModal}>
         <Form onSubmit={handleSubmit}>
           <FormHeader>{formData._id ? "Editar Elemento" : "Añadir Elemento"}</FormHeader>
@@ -284,14 +324,13 @@ function EvaluacionForm() {
       </Table>
       <FormHeader>
         Total puntos: {totalValor} de {data.length * preguntasPorItem} <br />
-        Porcentaje total resultado de calidad en uso: {totalPercentage}%
+        Porcentaje total: {totalPercentage}%
       </FormHeader>
       <FormHeader>
         Criterios de evaluación: <br /> <br />
         0 No cumple de 0% a un 30% <br />
         1 Cumple de 31% a 50% <br />
-        2 Cumple de 51% a 89% <br />
-        3 Cumple con o más de 90%
+        2 Cumple de 51% a 89% <br />3 Cumple con o más de 90%
       </FormHeader>
     </>
   );

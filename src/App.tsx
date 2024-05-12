@@ -23,21 +23,22 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainMenu />} />
-        <Route path="/funcionalidad" element={<FuncionalidadForm />} />
-        <Route path="/fiabilidad" element={<FiablidadForm />} />
-        <Route path="/usabilidad" element={<UsabilidadForm />} />
-        <Route path="/eficiencia" element={<EficienciaForm />} />
-        <Route path="/capacidad" element={<CapacidadForm />} />
-        <Route path="/portabilidad" element={<PortabilidadForm />} />
-        <Route path="/calidad" element={<CalidadForm />} />
-        <Route path="/evaluacion" element={<Evaluacion/>} />
-        <Route path="/evaluacion/:id" element={<EvaluacionForm/>} />
-        <Route path="/total" element={<Total />} />
-        <Route path="/:id" element={<Parametro />} />
-        {isAuthenticated ? <></> : <></>}
-      </Routes>
+      
+            <Routes>
+              <Route path="/" element={<MainMenu />} />
+              <Route path="/funcionalidad" element={<FuncionalidadForm />} />
+              <Route path="/fiabilidad" element={<FiablidadForm />} />
+              <Route path="/usabilidad" element={<UsabilidadForm />} />
+              <Route path="/eficiencia" element={<EficienciaForm />} />
+              <Route path="/capacidad" element={<CapacidadForm />} />
+              <Route path="/portabilidad" element={<PortabilidadForm />} />
+              <Route path="/calidad" element={<CalidadForm />} />
+              <Route path="/evaluacion" element={<Evaluacion/>} />
+              <Route path="/evaluacion/:id" element={<EvaluacionForm/>} />
+              <Route path="/total" element={<Total />} />
+              <Route path="/:id" element={<Parametro />} />
+              {isAuthenticated ? <></> : <></>}
+            </Routes>
     </BrowserRouter>
   );
 }

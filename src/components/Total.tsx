@@ -1,5 +1,7 @@
-import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import Modal from "./modals/FormModal";
+import DeleteConfirmationModal from "./modals/DeleteModal";
 import {
   FormWrapper,
   Form,
@@ -10,498 +12,262 @@ import {
   Label,
   ButtonContainer,
   Button,
-  ButtonCancel,
 } from "../styles/FormsStyles";
 
-interface Usabilidad {
-  totalPoints: number;
+interface DataItem {
+  _id: string;
+  item: string;
+  description: string;
+  valor: number;
   percentage: number;
+  preguntas: number;
+  total: number;
+  atributosCount?: number;
+  porcentaje?: number; // Ensure this is always set in fetchData()
 }
 
-interface Fiabilidad {
-  totalPoints: number;
-  percentage: number;
-}
 
-interface Funcionalidad {
-  totalPoints: number;
-  percentage: number;
-}
-
-interface Eficiencia {
-  totalPoints: number;
-  percentage: number;
-}
-
-interface Capacidad {
-  totalPoints: number;
-  percentage: number;
-}
-
-interface Portabilidad {
-  totalPoints: number;
-  percentage: number;
-}
-
-interface Calidad {
-  totalPoints: number;
-  percentage: number;
-}
 
 function Total() {
-  const [usabilidades, setUsabilidades] = useState<Usabilidad[]>([]);
-  const [fiabilidades, setFiabilidades] = useState<Fiabilidad[]>([]);
-  const [funcionalidades, setFuncionalidades] = useState<Funcionalidad[]>([]);
-  const [eficiencias, setEficiencias] = useState<Eficiencia[]>([]);
-  const [capacidades, setCapacidades] = useState<Capacidad[]>([]);
-  const [portabilidades, setPortabilidades] = useState<Portabilidad[]>([]);
-  const [calidades, setCalidades] = useState<Calidad[]>([]);
-  const [totalPointsSum, setTotalPointsSum] = useState<number>(0);
-  const [percentageSum, setPercentageSum] = useState<number>(0);
+  const [data, setData] = useState<DataItem[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [formData, setFormData] = useState<DataItem>({
+    _id: "",
+    item: "",
+    description: "",
+    valor: 0,
+    percentage: 0,
+    preguntas: 0,
+    total: 0,
+  });
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [totalPercentage, setTotalPercentage] = useState<number>(0); // State for total percentage
 
   useEffect(() => {
-    fetchUsabilidades();
-    fetchFiabilidades();
-    fetchFuncionalidades();
-    fetchEficiencias();
-    fetchCapacidades();
-    fetchPortabilidades();
-    fetchCalidades();
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    const sum = [
-      ...usabilidades,
-      ...fiabilidades,
-      ...funcionalidades,
-      ...eficiencias,
-      ...capacidades,
-      ...portabilidades,
-      ...calidades,
-    ]
-      .map((item) => item.totalPoints)
-      .reduce((acc, curr) => acc + curr, 0);
-    setTotalPointsSum(sum);
+  const fetchData = () => {
+    fetch("http://localhost:3230/api/parametro")
+      .then((response) => response.json())
+      .then((data: DataItem[]) => {
+        Promise.all(
+          data.map((item) =>
+            fetch(`http://localhost:3230/api/atributos?parametro=${item._id}`)
+              .then((response) => response.json())
+              .then((atributos) => {
+                item.atributosCount = atributos.length;
+                return item;
+              })
+          )
+        ).then((dataWithAtributosCount) => {
+          const totalItems = dataWithAtributosCount.length;
+          const equalPercentage = totalItems > 0 ? 100 / totalItems : 0;
+          dataWithAtributosCount.forEach((item) => (item.porcentaje = equalPercentage));
+          setData(dataWithAtributosCount);
 
-    const percentageSum = [
-      ...usabilidades,
-      ...fiabilidades,
-      ...funcionalidades,
-      ...eficiencias,
-      ...capacidades,
-      ...portabilidades,
-      ...calidades,
-    ]
-      .map((item) => item.percentage)
-      .reduce((acc, curr) => acc + curr, 0);
-    setPercentageSum(percentageSum);
-  }, [
-    usabilidades,
-    fiabilidades,
-    funcionalidades,
-    eficiencias,
-    capacidades,
-    portabilidades,
-    calidades,
-  ]);
-
-  const fetchUsabilidades = async () => {
-    try {
-      const response = await fetch("http://localhost:3230/api/usabilidad/");
-      if (!response.ok) {
-        throw new Error("Failed to fetch data from the server");
-      }
-      const data = await response.json();
-      setUsabilidades(data);
-    } catch (error) {
-      console.error("Error fetching usabilidades:", error);
-    }
+          // Calculate total percentage
+          const totalPercentage = dataWithAtributosCount.reduce((acc, item) => {
+            return acc + (((item.porcentaje ?? 0) * item.percentage) / 100);
+          }, 0);
+          setTotalPercentage(totalPercentage);
+        });
+      })
+      .catch((error) => console.error("Error fetching data:", error));
   };
 
-  const fetchFiabilidades = async () => {
-    try {
-      const response = await fetch("http://localhost:3230/api/fiabilidad/");
-      if (!response.ok) {
-        throw new Error("Failed to fetch data from the server");
-      }
-      const data = await response.json();
-      setFiabilidades(data);
-    } catch (error) {
-      console.error("Error fetching fiabilidades:", error);
-    }
+  const handleOpenModal = () => {
+    setShowModal(true);
   };
 
-  const fetchFuncionalidades = async () => {
-    try {
-      const response = await fetch("http://localhost:3230/api/funcionalidad/");
-      if (!response.ok) {
-        throw new Error("Failed to fetch data from the server");
-      }
-      const data = await response.json();
-      setFuncionalidades(data);
-    } catch (error) {
-      console.error("Error fetching funcionalidades:", error);
-    }
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setFormData({ _id: "", item: "", description: "", preguntas: 0, total: 0, valor: 0, percentage: 0 });
   };
 
-  const fetchEficiencias = async () => {
-    try {
-      const response = await fetch("http://localhost:3230/api/eficiencia/");
-      if (!response.ok) {
-        throw new Error("Failed to fetch data from the server");
-      }
-      const data = await response.json();
-      setEficiencias(data);
-    } catch (error) {
-      console.error("Error fetching eficiencias:", error);
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: name === "preguntas" || name === "total" ? parseInt(value) : value,
+    }));
   };
 
-  const fetchCapacidades = async () => {
-    try {
-      const response = await fetch("http://localhost:3230/api/capacidad/");
-      if (!response.ok) {
-        throw new Error("Failed to fetch data from the server");
-      }
-      const data = await response.json();
-      setCapacidades(data);
-    } catch (error) {
-      console.error("Error fetching capacidades:", error);
-    }
+  const handleEditItem = (item: DataItem) => {
+    setFormData(item);
+    setShowModal(true);
   };
 
-  const fetchPortabilidades = async () => {
-    try {
-      const response = await fetch("http://localhost:3230/api/portabilidad/");
-      if (!response.ok) {
-        throw new Error("Failed to fetch data from the server");
-      }
-      const data = await response.json();
-      setPortabilidades(data);
-    } catch (error) {
-      console.error("Error fetching portabilidades:", error);
-    }
+  const handleOpenDeleteModal = (id: string) => {
+    setSelectedItemId(id);
+    setShowDeleteModal(true);
   };
 
-  const fetchCalidades = async () => {
-    try {
-      const response = await fetch("http://localhost:3230/api/calidad/");
-      if (!response.ok) {
-        throw new Error("Failed to fetch data from the server");
-      }
-      const data = await response.json();
-      setCalidades(data);
-    } catch (error) {
-      console.error("Error fetching calidades:", error);
-    }
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setSelectedItemId(null);
   };
+
+  const handleDeleteItem = (id: string) => {
+    fetch(`http://localhost:3230/api/parametro/${id}`, {
+      method: "DELETE",
+    })
+      .then((response) => {
+        if (response.ok) {
+          fetchData(); // Fetch data again after deletion
+        } else {
+          console.error("Error al eliminar el parámetro:", response.statusText);
+        }
+      })
+      .catch((error) => {
+        console.error("Error al eliminar el parámetro:", error);
+      });
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const url = formData._id
+      ? `http://localhost:3230/api/parametro/${formData._id}`
+      : "http://localhost:3230/api/parametro";
+    const method = formData._id ? "PUT" : "POST";
+
+    fetch(url, {
+      method: method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((newDataItem) => {
+        fetchData(); // Fetch data again after editing
+        handleCloseModal();
+      })
+      .catch((error) => {
+        console.error("Error saving data:", error);
+      });
+  };
+
+  const totalAtributosCount = data.reduce((acc, item) => acc + (item.atributosCount || 0), 0);
+  const totalValor = data.reduce((acc, item) => acc + item.valor, 0);
+  
+
 
   return (
     <>
       <FormWrapper>
         <Form>
-          <FormHeader>8. RESULTADOS</FormHeader>
-          <Table>
-            <TableRow>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="codigo">Código</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="item">Item</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="descripción">Descripción</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="preguntas">Valor</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="total">Máximo</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="total">% Resultado</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="total">Máximo</Label>
-              </TableCell>
-              <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                <Label htmlFor="total">% Global</Label>
-              </TableCell>
-            </TableRow>
-            {funcionalidades.map((funcionalidad, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Label htmlFor={`c${index + funcionalidades.length + 1}`}>{index + 1}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label>FUNCIONALIDAD</Label>
-                </TableCell>
-                <TableCell>
-                  <Label htmlFor={`d${index + funcionalidades.length + 1}`}>
-                    La capacidad del software para proveer las funciones que satisfacen las
-                    necesidades explícitas e implícitas cuando el software se utiliza bajo
-                    condiciones específicas.
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`v${index + funcionalidades.length + 1}`}>
-                    {funcionalidad.totalPoints}
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + funcionalidades.length + 1}`}>15</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`r${index + funcionalidades.length + 1}`}>
-                    {funcionalidad.percentage}%
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + funcionalidades.length + 1}`}>14.00%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`g${index + funcionalidades.length + 1}`}>
-                    {(funcionalidad.percentage * 0.14).toFixed(2)}%
-                  </Label>
-                </TableCell>
-              </TableRow>
-            ))}
-            {fiabilidades.map((fiabilidad, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Label htmlFor={`c${index + fiabilidades.length + 1}`}>{index + 2}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label>FIABILIDAD</Label>
-                </TableCell>
-                <TableCell>
-                  <Label htmlFor={`d${index + fiabilidades.length + 1}`}>
-                    La capacidad del software para mantener un nivel específico de funcionamiento
-                    cuando se está utilizando bajo condiciones especificadas.
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`v${index + fiabilidades.length + 1}`}>
-                    {fiabilidad.totalPoints}
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + fiabilidades.length + 1}`}>12</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`r${index + fiabilidades.length + 1}`}>
-                    {fiabilidad.percentage}%
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + fiabilidades.length + 1}`}>14.00%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`g${index + fiabilidades.length + 1}`}>
-                    {(fiabilidad.percentage * 0.14).toFixed(2)}%
-                  </Label>
-                </TableCell>
-              </TableRow>
-            ))}
-            {usabilidades.map((usabilidad, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Label htmlFor={`c${index + 1}`}>{index + 3}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label>USABILIDAD</Label>
-                </TableCell>
-                <TableCell>
-                  <Label htmlFor={`d${index + 1}`}>
-                    La capacidad del software de ser entendido, aprendido, usado y atractivo al
-                    usuario, cuando es utilizado bajo las condiciones especificadas.
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`v${index + 1}`}>{usabilidad.totalPoints}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + 1}`}>15</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`r${index + 1}`}>{usabilidad.percentage}%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + 1}`}>15.00%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`g${index + 1}`}>
-                    {(usabilidad.percentage * 0.15).toFixed(2)}%
-                  </Label>
-                </TableCell>
-              </TableRow>
-            ))}
-            {eficiencias.map((eficiencia, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Label htmlFor={`c${index + eficiencias.length + 1}`}>{index + 4}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label>EFICIENCIA</Label>
-                </TableCell>
-                <TableCell>
-                  <Label htmlFor={`d${index + eficiencias.length + 1}`}>
-                    La capacidad del software de proveer un desempeño adecuado, de acuerdo a la
-                    cantidad de recursos utilizados y bajo las condiciones específicas.
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`v${index + eficiencias.length + 1}`}>
-                    {eficiencia.totalPoints}
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + eficiencias.length + 1}`}>9</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`r${index + eficiencias.length + 1}`}>
-                    {eficiencia.percentage}%
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + eficiencias.length + 1}`}>15.00%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`g${index + eficiencias.length + 1}`}>
-                    {(eficiencia.percentage * 0.15).toFixed(2)}%
-                  </Label>
-                </TableCell>
-              </TableRow>
-            ))}
-            {capacidades.map((capacidad, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Label htmlFor={`c${index + capacidades.length + 1}`}>{index + 5}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label>CAPACIDAD DE MANTENIMIENTO</Label>
-                </TableCell>
-                <TableCell>
-                  <Label htmlFor={`d${index + capacidades.length + 1}`}>
-                    Capacidad del software para ser modificado. Las modificaciones pueden incluir
-                    correcciones, mejoras o adaptación del software a cambios en el entorno, y
-                    especificaciones de requerimientos funcionales.
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`v${index + capacidades.length + 1}`}>
-                    {capacidad.totalPoints}
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + capacidades.length + 1}`}>15</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`r${index + capacidades.length + 1}`}>
-                    {capacidad.percentage}%
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + capacidades.length + 1}`}>14.00%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`g${index + capacidades.length + 1}`}>
-                    {(capacidad.percentage * 0.14).toFixed(2)}%
-                  </Label>
-                </TableCell>
-              </TableRow>
-            ))}
-            {portabilidades.map((portabilidad, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Label htmlFor={`c${index + portabilidades.length + 1}`}>{index + 6}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label>PORTABILIDAD</Label>
-                </TableCell>
-                <TableCell>
-                  <Label htmlFor={`d${index + portabilidades.length + 1}`}>
-                    La capacidad del software para ser trasladado de un entorno a otro. El entorno
-                    puede incluir entornos organizaciones, de hardware o de software.
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`v${index + portabilidades.length + 1}`}>
-                    {portabilidad.totalPoints}
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + portabilidades.length + 1}`}>15</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`r${index + portabilidades.length + 1}`}>
-                    {portabilidad.percentage}%
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + portabilidades.length + 1}`}>14.00%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`g${index + portabilidades.length + 1}`}>
-                    {(portabilidad.percentage * 0.14).toFixed(2)}%
-                  </Label>
-                </TableCell>
-              </TableRow>
-            ))}
-            {calidades.map((calidad, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  <Label htmlFor={`c${index + calidades.length + 1}`}>{index + 7}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label>CALIDAD EN USO</Label>
-                </TableCell>
-                <TableCell>
-                  <Label htmlFor={`d${index + calidades.length + 1}`}>
-                    La capacidad del software para permitirles a usuarios específicos lograr las
-                    metas propuestas con eficacia, productividad, seguridad y satisfacción, en
-                    contextos especificados de uso.
-                  </Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`v${index + calidades.length + 1}`}>{calidad.totalPoints}</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + calidades.length + 1}`}>18</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`r${index + calidades.length + 1}`}>{calidad.percentage}%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`i${index + calidades.length + 1}`}>14.00%</Label>
-                </TableCell>
-                <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-                  <Label htmlFor={`g${index + calidades.length + 1}`}>
-                    {(calidad.percentage * 0.14).toFixed(2)}%
-                  </Label>
-                </TableCell>
-              </TableRow>
-            ))}
-          </Table>
-          <FormHeader>
-            Total puntos: {totalPointsSum} de 99 <br />
-            Porcentaje Total: {totalPointsSum.toFixed(2)}%
-          </FormHeader>
-          <FormHeader>
-            Resultados del ejercicio: <br /> <br />
-            0 A 30% DEFICIENTE <br />
-            31 A 50% INSUFICIENTE <br />
-            51 A 70% ACEPTABLE <br />
-            71 A 89% SOBRESALIENTE <br />
-            MAS DE 90% EXCELENTE
-          </FormHeader>
-          <ButtonContainer>
-            <Link to="/">
-              <Button type="button">VOLVER AL MENÚ DE INICIO</Button>
-            </Link>
-          </ButtonContainer>
+          <FormHeader>RESULTADOS</FormHeader>
         </Form>
       </FormWrapper>
+      <Modal show={showModal} handleClose={handleCloseModal}>
+        <Form onSubmit={handleSubmit}>
+          <FormHeader>{formData._id ? "Editar Elemento" : "Añadir Elemento"}</FormHeader>
+          <Label htmlFor="item">Item:</Label>
+          <input
+            type="text"
+            id="item"
+            name="item"
+            value={formData.item}
+            onChange={handleChange}
+            required
+          />
+          <Label htmlFor="description">Descripción:</Label>
+          <input
+            type="text"
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            required
+          />
+          <ButtonContainer>
+            <Button type="submit">{formData._id ? "Guardar Cambios" : "Guardar"}</Button>
+            <Button type="button" onClick={handleCloseModal}>
+              Cancelar
+            </Button>
+          </ButtonContainer>
+        </Form>
+      </Modal>
+      <DeleteConfirmationModal
+        show={showDeleteModal}
+        handleClose={handleCloseDeleteModal}
+        handleDelete={() => {
+          handleDeleteItem(selectedItemId!);
+          handleCloseDeleteModal(); // Close the modal after deleting the item
+        }}
+      />
+
+      <Table>
+        <TableRow>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="codigo">Código</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="item">Item</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="descripción">Descripción</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="valor">Valor</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="maximo1">Máximo</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="resultado">% Resultado</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="maximo2">Máximo</Label>
+          </TableCell>
+          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
+            <Label htmlFor="global">% Global</Label>
+          </TableCell>
+        </TableRow>
+        {data.map((item, index) => (
+          <TableRow key={index}>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{index + 1}</Label>
+            </TableCell>
+            <TableCell>
+              <Label>{item.item}</Label>
+            </TableCell>
+            <TableCell>
+              <Label>{item.description}</Label>
+            </TableCell>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{item.valor}</Label>
+            </TableCell>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{item.atributosCount !== undefined ? item.atributosCount * 3 : 0}</Label>
+            </TableCell>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{item.percentage}%</Label>
+            </TableCell>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{item.porcentaje !== undefined ? item.porcentaje.toFixed(2) : "0.00"}%</Label>
+            </TableCell>
+            <TableCell style={{ textAlign: "center" }}>
+              <Label>{(((item.porcentaje ?? 0) * item.percentage) / 100).toFixed(2)}%</Label>
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+      <FormHeader>
+        Total puntos: {totalValor} de {totalAtributosCount * 3} <br />
+        Porcentaje total: {totalPercentage.toFixed(2)}%
+      </FormHeader>
+      <FormHeader>
+        Resultados del ejercicio: <br /> <br />
+        0 a 30% DEFICIENTE <br />
+        31 A 50% INSUFICIENTE <br />
+        51 A 70% ACEPTABLE <br />
+        71 A 89% SOBRESALIENTE <br />
+        MÁS DE 90% EXCELENTE
+      </FormHeader>
     </>
   );
 }
