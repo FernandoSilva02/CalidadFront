@@ -92,34 +92,60 @@ function EvaluacionForm() {
       });
   };
 
-  const handleOpenModal = () => {
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setFormData({
-      _id: "",
-      item: "",
-      description: "",
-      valor: 0,
-      observation: "",
-      percentage: 0,
-      totalPoints: 0,
-    });
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, itemId: string) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: name === "valor" ? parseInt(value) : value,
-    }));
+    setData((prevData) =>
+      prevData.map((item) =>
+        item._id === itemId
+          ? { ...item, [name]: name === "valor" ? parseInt(value) : value }
+          : item
+      )
+    );
   };
 
-  const handleEditItem = (item: DataItem) => {
-    setFormData(item);
-    setShowModal(true);
+  const handleSaveChanges = () => {
+    data.forEach((item) => {
+      fetch(`http://localhost:3230/api/atributos/${item._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(item),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(() => {
+          console.log("Item guardado exitosamente:", item);
+        })
+        .catch((error) => {
+          console.error("Error saving item:", error);
+        });
+    });
+
+    fetch(`http://localhost:3230/api/parametro/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        valor: totalValor,
+        percentage: totalPercentage,
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          console.log("Cambios guardados exitosamente.");
+        } else {
+          console.error("Error al guardar los cambios:", response.statusText);
+        }
+      })
+      .catch((error) => {
+        console.error("Error al guardar los cambios:", error);
+      });
   };
 
   const handleOpenDeleteModal = (id: string) => {
@@ -148,67 +174,6 @@ function EvaluacionForm() {
       });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const url = formData._id
-      ? `http://localhost:3230/api/atributos/${formData._id}`
-      : "http://localhost:3230/api/atributos";
-    const method = formData._id ? "PUT" : "POST";
-
-    const requestBody = {
-      ...formData,
-      parametro: id,
-    };
-
-    fetch(url, {
-      method: method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    })
-      .then((response) => response.json())
-      .then((newDataItem) => {
-        if (formData._id) {
-          setData((prevData) =>
-            prevData.map((item) => (item._id === formData._id ? newDataItem : item))
-          );
-        } else {
-          setData((prevData) =>
-            Array.isArray(prevData) ? [...prevData, newDataItem] : [newDataItem]
-          );
-        }
-        handleCloseModal();
-      })
-      .catch((error) => {
-        console.error("Error saving data:", error);
-      });
-  };
-
-  const handleSaveChanges = () => {
-    fetch(`http://localhost:3230/api/parametro/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        valor: totalValor,
-        percentage: totalPercentage,
-      }),
-    })
-      .then((response) => {
-        if (response.ok) {
-          console.log("Cambios guardados exitosamente.");
-        } else {
-          console.error("Error al guardar los cambios:", response.statusText);
-        }
-      })
-      .catch((error) => {
-        console.error("Error al guardar los cambios:", error);
-      });
-  };
-
   return (
     <>
       <FormWrapper>
@@ -230,37 +195,7 @@ function EvaluacionForm() {
           <Button onClick={handleSaveChanges}>Guardar Cambios</Button>
         </Link>
       </ButtonContainer>
-      <Modal show={showModal} handleClose={handleCloseModal}>
-        <Form onSubmit={handleSubmit}>
-          <FormHeader>{formData._id ? "Editar Elemento" : "Añadir Elemento"}</FormHeader>
-          <Label htmlFor="valor">Valor:</Label>
-          <input
-            type="number"
-            id="valor"
-            name="valor"
-            value={formData.valor}
-            onChange={handleChange}
-            min="0"
-            max="3"
-            required
-          />
-          <br />
-          <Label htmlFor="observation">Observación:</Label>
-          <input
-            type="text"
-            id="observation"
-            name="observation"
-            value={formData.observation}
-            onChange={handleChange}
-          />
-          <ButtonContainer>
-            <Button type="submit">{formData._id ? "Guardar Cambios" : "Guardar"}</Button>
-            <Button type="button" onClick={handleCloseModal}>
-              Cancelar
-            </Button>
-          </ButtonContainer>
-        </Form>
-      </Modal>
+
       <DeleteConfirmationModal
         show={showDeleteModal}
         handleClose={handleCloseDeleteModal}
@@ -287,13 +222,10 @@ function EvaluacionForm() {
           <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
             <Label htmlFor="Descripcion">Descripción</Label>
           </TableCell>
-          <TableCell style={{ textAlign: "center", fontWeight: "bold" }}>
-            <Label htmlFor="acciones">Acciones</Label>
-          </TableCell>
         </TableRow>
         {data.length > 0 ? (
           data.map((item, index) => (
-            <TableRow key={index}>
+            <TableRow key={item._id}>
               <TableCell style={{ textAlign: "center" }}>
                 <Label>{index + 1}</Label>
               </TableCell>
@@ -304,13 +236,26 @@ function EvaluacionForm() {
                 <Label>{item.description}</Label>
               </TableCell>
               <TableCell style={{ textAlign: "center" }}>
-                <Label>{item.valor}</Label>
-              </TableCell>
-              <TableCell>
-                <Label>{item.observation}</Label>
+                <input
+                  type="number"
+                  id="valor"
+                  name="valor"
+                  value={item.valor}
+                  onChange={(e) => handleChange(e, item._id)}
+                  min="0"
+                  max="3"
+                  required
+                />
               </TableCell>
               <TableCell style={{ textAlign: "center" }}>
-                <Button onClick={() => handleEditItem(item)}>Editar</Button>
+                <textarea
+                  id="observation"
+                  name="observation"
+                  value={item.observation}
+                  onChange={(e) => handleChange(e, item._id)}
+                  rows={4} // You can adjust the number of rows to make it larger
+                  cols={50} // You can adjust the number of columns to make it larger
+                />
               </TableCell>
             </TableRow>
           ))

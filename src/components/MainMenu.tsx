@@ -73,7 +73,9 @@ function MainMenu() {
     setFormData({ _id: "", item: "", description: "", preguntas: 0, total: 0 });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -171,13 +173,14 @@ function MainMenu() {
             required
           />
           <Label htmlFor="description">Descripción:</Label>
-          <input
-            type="text"
+          <textarea
             id="description"
             name="description"
             value={formData.description}
             onChange={handleChange}
             required
+            rows={4} // You can adjust the number of rows to make it larger
+            cols={35} // You can adjust the number of columns to make it larger
           />
           <ButtonContainer>
             <Button type="submit">{formData._id ? "Guardar Cambios" : "Guardar"}</Button>
@@ -244,7 +247,7 @@ function MainMenu() {
         ))}
       </Table>
       <FormHeader>
-      Total de preguntas: {totalAtributosCount} <br />
+        Total de preguntas: {totalAtributosCount} <br />
         Porcentaje Total: 100.00%
       </FormHeader>
       <ButtonContainer>

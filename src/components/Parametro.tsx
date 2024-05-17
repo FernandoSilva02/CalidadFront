@@ -82,13 +82,14 @@ function Parametro() {
     setFormData({ _id: "", item: "", description: ""});
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]: name === "valor" || name === "observation" ? parseInt(value) : value,
     }));
   };
+  
 
   const handleEditItem = (item: DataItem) => {
     setFormData(item);
@@ -196,13 +197,14 @@ function Parametro() {
             required
           />
           <Label htmlFor="description">Descripción:</Label>
-          <input
-            type="text"
+          <textarea
             id="description"
             name="description"
             value={formData.description}
             onChange={handleChange}
             required
+            rows={4} // You can adjust the number of rows to make it larger
+            cols={35} // You can adjust the number of columns to make it larger
           />
           <ButtonContainer>
             <Button type="submit">{formData._id ? "Guardar Cambios" : "Guardar"}</Button>
