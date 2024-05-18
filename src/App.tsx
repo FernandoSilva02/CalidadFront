@@ -7,6 +7,7 @@ import Parametro from "./components/Parametro";
 import Evaluacion from "./components/Evaluacion";
 import EvaluacionForm from "./components/EvaluacionForm";
 import Total from "./components/Total";
+import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
 function App() {
@@ -15,11 +16,31 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
-        <Route path="/home" element={<MainMenu />} />
-        <Route path="/evaluacion" element={<Evaluacion />} />
-        <Route path="/evaluacion/:id" element={<EvaluacionForm />} />
-        <Route path="/total" element={<Total />} />
-        <Route path="/:id" element={<Parametro />} />
+        <Route path="/home" element={
+          <ProtectedRoute>
+            <MainMenu />
+          </ProtectedRoute>
+        } />
+        <Route path="/evaluacion" element={
+          <ProtectedRoute>
+            <Evaluacion />
+          </ProtectedRoute>
+        } />
+        <Route path="/evaluacion/:id" element={
+          <ProtectedRoute>
+            <EvaluacionForm />
+          </ProtectedRoute>
+        } />
+        <Route path="/total" element={
+          <ProtectedRoute>
+            <Total />
+          </ProtectedRoute>
+        } />
+        <Route path="/:id" element={
+          <ProtectedRoute>
+            <Parametro />
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   );

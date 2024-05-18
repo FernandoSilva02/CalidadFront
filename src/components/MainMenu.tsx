@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Modal from "./modals/FormModal";
 import DeleteConfirmationModal from "./modals/DeleteModal";
 import {
@@ -36,6 +36,7 @@ function MainMenu() {
     total: 0,
   });
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const navigate = useNavigate(); // Hook for navigation
 
   useEffect(() => {
     fetchData();
@@ -139,6 +140,11 @@ function MainMenu() {
       });
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/"); // Redirect to login page
+  };
+
   const totalAtributosCount = data.reduce((acc, item) => acc + (item.atributosCount || 0), 0);
 
   return (
@@ -156,6 +162,9 @@ function MainMenu() {
           <ButtonContainer>
             <Button type="button" onClick={handleOpenModal}>
               Añadir Elemento
+            </Button>
+            <Button $custom1 type="button" onClick={handleLogout}>
+              Cerrar Sesión
             </Button>
           </ButtonContainer>
         </Form>

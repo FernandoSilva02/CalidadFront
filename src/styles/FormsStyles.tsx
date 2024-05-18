@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, {css} from "styled-components";
 
 const colors = {
   white: "#fff",
@@ -14,6 +14,10 @@ const spacing = {
   medium: "15px",
   large: "40px",
 };
+
+interface ButtonProps {
+  $custom1?: boolean;
+}
 
 const InputBase = styled.input`
   padding: ${spacing.small};
@@ -81,7 +85,7 @@ export const ButtonContainer = styled.div`
   margin-top: ${spacing.large};
 `;
 
-export const Button = styled.button`
+export const Button = styled.button<ButtonProps>`
   padding: ${spacing.medium};
   border: none;
   border-radius: 6px;
@@ -92,7 +96,15 @@ export const Button = styled.button`
   /* Centrar verticalmente */
   margin-top: auto;
   margin-bottom: auto;
+
+  /* Nuevo estilo cuando $custom1 es true */
+  ${(props) =>
+    props.$custom1 &&
+    css`
+      background-color: ${colors.red}; // Cambiar color a rojo
+    `}
 `;
+
 
 export const ButtonCancel = styled.button`
   padding: ${spacing.medium};
